@@ -14,19 +14,28 @@ from sklearn import svm
 import re
 import csv
 
-def Build_Data_Set(features = ["Magnitude",
-                               "Sentiment Scores"]):
+def Build_Test_Set(features = ["Diff_Close","GSA_polarity"]):
     try:
         data_df = pd.DataFrame.from_csv("key_stats.csv")
-        data_df = data_df[1:31]
+        data_df = data_df[30:49]
         X = np.array(data_df[features].values)
     
-        y = (data_df["Label"]
+    except Exception as e:
+        print(str(e))
+              
+    return X
+
+def Build_Data_Set(features = ["Diff_Close","GSA_polarity"]):
+    try:
+        data_df = pd.DataFrame.from_csv("key_stats.csv")
+        data_df = data_df[1:29]
+        X = np.array(data_df[features].values)
+    
+        y = (data_df["Pred_Label"]
             .replace("Bearish",0)
            .replace("Bullish",1)
           .values.tolist())
         
-        # 0 - Bearish and 1 - Bullish
     except Exception as e:
         print(str(e))
               
@@ -39,56 +48,66 @@ def Analysis():
     try:
         X, y = Build_Data_Set()
 
+        #Training..
         clf = svm.SVC(kernel="linear", C= 1.0)
-        clf.fit(X,y)
-        #Prediction, reuses the training set..
-        print(clf.predict(X[0:7]))        
-    
+        clf.fit(X,y)       
         w = clf.coef_[0]
         a = -w[0] / w[1]     
         xx = np.linspace(min(X[:, 0]), max(X[:, 0]))
         yy = a * xx - clf.intercept_[0] / w[1]
-
         h0 = plt.plot(xx,yy, "k-", label="Linear Support Vector Classification.")
-
         plt.scatter(X[:, 0],X[:, 1],c=y)
-        plt.ylabel("Sentiment Scores")
-        plt.xlabel("Magnitude")
+        plt.ylabel("GSA_polarity")
+        plt.xlabel("Diff_Close")
         plt.legend()
-
         plt.show()
+        
+        #Prediction..
+        X = Build_Test_Set()
+        print(clf.predict(X))         
+        #w = clf.coef_[0]
+        #print(w)
+        
+        #a = -w[0] / w[1]
+        
+        #xx = np.linspace(min(X[:, 0]), max(X[:, 0]))
+        #yy = a * xx - clf.intercept_[0] / w[1]
+        
+        #h0 = plt.plot(xx, yy, 'k-', label="non weighted div")
+        
+        #plt.scatter(X[:, 0], X[:, 1], c = y)
+        #plt.legend()
+        #plt.show()        
         
     except Exception as e:
         print(str(e))    
 
-#try:
-    #df = pd.DataFrame(columns = ['Ticker','Date','Sentiment Scores','Magnitude','Close', 'Difference_Close','Status'])
-#except:
-    #pass
-
-#previous_price = 0.0
+try:
+    df = pd.DataFrame(columns = ['Ticker','Date','GSA_polarity','Diff_Close','Pred_Label'])
+except:
+    pass
 
 #Building the Dataset..
-#with open('ScikitLearn_DataSet.csv') as csvfile:
-    #readCSV = csv.reader(csvfile, delimiter=',')
-    #for row in readCSV:
+with open('Dataset.csv') as csvfile:
+    readCSV = csv.reader(csvfile, delimiter=',')
+    for row in readCSV:
         
-        #try:
-            #ticker_list.append(row[0])
-            #if previous_price > float(row[4]):
-                #status = "Underperformed"
-            #else:
-                #status = "Outperformed" 
-            #difference = float(row[4])-previous_price
-            #previous_price = float(row[4])
-           
-            #date_stamp = datetime.strptime(row[1],'%m/%d/%Y')
+        try:
+            ticker_list.append(row[0])
+            date_stamp = datetime.strptime(row[1],'%d/%m/%Y')
+            
+            if row[2] == "neutral":
+                sentiment = 0
+            elif row[2] == "positive":
+                sentiment = 1
+            else:
+                sentiment = -1
         
-            #df = df.append({'Ticker':row[0],'Date':date_stamp,'Sentiment Scores':float(row[2]),'Magnitude':float(row[3]),'Close':float(row[4]),
-                        #'Difference_Close':difference,'Status':status,}, ignore_index = True)
-            #previous_price = float(row[4])
-        #except Exception as e:
-            #print(str(e))
+            df = df.append({'Ticker':row[0],'Date':date_stamp,'GSA_polarity':sentiment,'Diff_Close':float(row[3]),'Pred_Label':row[4]
+                            ,}, ignore_index = True)
+
+        except Exception as e:
+            print(str(e))
           
 #Plotting Sentiment Scores/ Close Values..
 #for each_ticker in ticker_list:
@@ -113,8 +132,8 @@ def Analysis():
 
 #Save the DataFrame..
 try:
-    #save = ('C:\\Users\\jarre\\Desktop\\PredModel\\key_stats.csv')
-    #df.to_csv(save)
+    save = ('C:\\Users\\jarre\\Desktop\\PredModel\\key_stats.csv')
+    df.to_csv(save)
     Analysis()
 except Exception as e:
     print(str(e))
